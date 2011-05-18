@@ -1,36 +1,75 @@
 #include <stdio.h>
-#include <signal.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
 
-int x=1;
-int gi=0;
-int pid=0;
+int piparr[2];
 
-void function(int i, siginfo_t * info,void * vinfo)
+void HandleSignal(int sig, siginfo_t *si, void *context);
+
+int main(int argc, char *argv[])
 {
-	gi=i;
-	pid=(int)info->si_pid;	
-	if(i==20 || i==5)
-		x=0;
-}
+   struct sigaction sVal;
+   pid_t myPID;
+   pid_t myG_PID;
 
-int main()
+   sVal.sa_flags = SA_SIGINFO;
+
+    sVal.sa_sigaction = HandleSignal;
+
+   myPID = getpid();
+   myG_PID = getpgid(myPID);
+   printf("\nMy process id = %d.\n", myPID);
+   printf("My process group id = %d.\n", myG_PID);
+
+   if(fork() == 0)
+   {
+      myPID = getpid();
+      myG_PID = getpgid(myPID);
+      printf("\nChild: My process id = %d.\n", myPID);
+      printf("Child: My process group id = %d.\n", myG_PID);
+
+      setpgid(0,0);
+
+      myPID = getpid();
+      myG_PID = getpgid(myPID);
+      printf("\nChild: My process id = %d.\n", myPID);
+      printf("Child: My process group id = %d.\n", myG_PID);
+   }
+   else
+   {
+      sigaction(SIGINT, &sVal, NULL);
+      sigaction(SIGCHLD, &sVal, NULL);
+
+      myPID = getpid();
+      myG_PID = getpgid(myPID);
+      printf("\nParent: My process id = %d.\n", myPID);
+      printf("Parent: My process group id = %d.\n", myG_PID);
+
+      while(1)
+      {
+      }
+   }
+
+   return(0);
+} 
+
+void HandleSignal(int sig, siginfo_t *si, void *context)
 {
-	struct sigaction sag;
-	sag.sa_sigaction = function;
-	sag.sa_flags=SA_SIGINFO; 
-
-	for (int num=1;num<=31;num++)
-		if(sigaction(num,&sag,0)==-1)
-			printf("error: %d\n",num);
-	while(x==1)
-	{	
-		if((gi!=0)&&(gi<=31))		
-		{
-			printf ("I am signal number %d\nprocess id %d\n", gi,pid);
-			gi=0;
-		}
-	}
-
-	return 0;
+   switch(sig)
+   {
+      case SIGINT:
+         printf("\nControl-C was pressed: mypid = %d, mypgid = %d\n",
+            getpid(), getpgid(getpid()));
+         _exit(0);
+         break;
+      case SIGCHLD:
+         printf("\nSIGCHLD. mypid = %d, mypgid = %d\n",
+            getpid(), getpgid(getpid()));
+         if(si->si_code == CLD_EXITED || si->si_code == CLD_KILLED)
+         {
+            printf("   Process %d is done!\n", si->si_pid);
+         }
+         break;
+   }
 }
