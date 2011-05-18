@@ -5,15 +5,18 @@
 #include <errno.h>
 
 int piparr[2];
+int gi=0;
 
 void function(int i, siginfo_t * info,void * vinfo)
 {
-	if(write(piparr[1],&i,sizeof(int))==-1)
+	gi=i;
+	int x=getpid();
+	if(write(piparr[1],x,sizeof(int))==-1)
 	{
 		puts("Error i");
 	}
-
-	if(write(piparr[1],info,sizeof(siginfo_t))==-1)
+	x=getpgid(x);
+	if(write(piparr[1],x,sizeof(int))==-1)
 	{
 		puts("Error info");
 	}	
@@ -33,18 +36,18 @@ int main()
 	for (int num=1;num<=31;num++)
 		if(sigaction(num,&sag,0)==-1)
 			printf("error: %d\n",num);
-	int gi=0,er;
-	siginfo_t info;
+	int pid=0,er,gpid=0;
+	
 	while(gi!=20)
 	{	
-		er=read(piparr[0],&gi,sizeof(int));
+		er=read(piparr[0],&pid,sizeof(int));
 		if(er==-1 && errno!=EINTR)
 			puts("read error");
 		else if(er>0)
 		{	
-			printf ("I am signal number %d\n", gi);
-			read(piparr[0],&info,sizeof(info));
-			printf ("process id %d\n", (int)(info.si_pid));
+			printf ("PID %d\n", pid);
+			read(piparr[0],&gpid,sizeof(int));
+			printf ("Group pid %d\n", gpid);
 		}
 	}	
 	close(piparr[1]);
