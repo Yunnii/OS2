@@ -14,7 +14,7 @@ void  critical_function()
 	++sch;
 	puts("Critical func hello =)");
 }
-void mfence_C()
+void mfence_c()
 {
 //#define mbarrier() asm volatile ("":::"memory")
 	asm volatile("mfence":::"memory");
