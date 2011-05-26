@@ -1,14 +1,19 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sched.h>
 #include <unistd.h>
 
 
 
-bool threads[2];
+int threads[2];
 int turn;
+int sch = 0;
 
+void  critical_function
+{
+	++sch;
+	puts("Critical func hello =)");
+}
 void mfence_C()
 {
 //#define mbarrier() asm volatile ("":::"memory")
@@ -16,7 +21,7 @@ void mfence_C()
 }
 void *dekker(int thread_id)
 {
-    threads[thread_id] = true; 
+    threads[thread_id] = 1; 
 	mfence_c();
     while (threads[1-thread_id])
     {
@@ -24,9 +29,9 @@ void *dekker(int thread_id)
         if (turn != thread_id)
         {
             // Очередь не наша, подождем...
-            threads[thread_id] = false;
+            threads[thread_id] = 0;
             while (turn != thread_id) {}
-            threads[thread_id] = true;
+            threads[thread_id] = 1;
         }
     }
     critical_function();
@@ -34,7 +39,7 @@ void *dekker(int thread_id)
 	
     turn = 1-thread_id;
 	mfence_c();
-    threads[thread_id] = false;
+    threads[thread_id] = 0;
 }
 
 int main()
