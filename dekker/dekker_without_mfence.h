@@ -9,10 +9,10 @@ int threads[2];
 int turn;
 int sch = 0;
 
-void  critical_function()
+void  critical_function(int thread_id)
 {
 	++sch;
-	puts("Critical func hello =)");
+	printf("Critical func hello =) %d\n",thread_id);
 }
 void mfence_c()
 {
@@ -22,7 +22,7 @@ void mfence_c()
 void *dekker(int thread_id)
 {
     threads[thread_id] = 1; 
-	//mfence_c();
+//	mfence_c();
     while (threads[1-thread_id])
     {
         // Сюда мы попадаем, когда еще кто-то есть. 
@@ -38,7 +38,7 @@ void *dekker(int thread_id)
     // Мы попользовались ресурсом, спасибо. Дадим и другим.
 	
     turn = 1-thread_id;
-	//mfence_c();
+	//mfence_c(thread_id);
     threads[thread_id] = 0;
 }
 
