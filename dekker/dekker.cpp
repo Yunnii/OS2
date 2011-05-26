@@ -1,3 +1,11 @@
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sched.h>
+#include <unistd.h>
+
+
+
 bool threads[2];
 int turn;
 
