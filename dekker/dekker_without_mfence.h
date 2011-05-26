@@ -22,7 +22,7 @@ void mfence_C()
 void *dekker(int thread_id)
 {
     threads[thread_id] = 1; 
-	mfence_c();
+	//mfence_c();
     while (threads[1-thread_id])
     {
         // Сюда мы попадаем, когда еще кто-то есть. 
@@ -38,7 +38,7 @@ void *dekker(int thread_id)
     // Мы попользовались ресурсом, спасибо. Дадим и другим.
 	
     turn = 1-thread_id;
-	mfence_c();
+	//mfence_c();
     threads[thread_id] = 0;
 }
 
