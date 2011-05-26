@@ -47,8 +47,6 @@ int main()
 	pthread_t thread1;
 	pthread_t thread2;
 	int thread_args[] = {0, 1};
-	
-	 NULL, do_it, (void*)&thread_args[i])) {
 	 
 	int status=pthread_create(&thread1,NULL,&dekker,0);
 	if (status)
