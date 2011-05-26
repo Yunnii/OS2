@@ -1,9 +1,15 @@
 bool threads[2];
 int turn;
 
+void mfence_C()
+{
+//#define mbarrier() asm volatile ("":::"memory")
+	asm volatile("mfence":::"memory");
+}
 void *dekker(int thread_id)
 {
     threads[thread_id] = true; 
+	mfence_c();
     while (threads[1-thread_id])
     {
         // Сюда мы попадаем, когда еще кто-то есть. 
@@ -19,6 +25,7 @@ void *dekker(int thread_id)
     // Мы попользовались ресурсом, спасибо. Дадим и другим.
 	
     turn = 1-thread_id;
+	mfence_c();
     threads[thread_id] = false;
 }
 
