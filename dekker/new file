@@ -1,0 +1,3 @@
+cc dekker.cpp  -pthread 
+/tmp/ccm6RED6.o:(.eh_frame+0x12): undefined reference to `__gxx_personality_v0'
+collect2: ld returned 1 exit status

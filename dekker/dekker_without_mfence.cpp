@@ -23,7 +23,7 @@ void* dekker(void* id)
 {
 	int thread_id=*((int*)id);
     threads[thread_id] = 1; 
-	mfence_c();
+	//mfence_c();
     while (threads[1-thread_id])
     {
         if (turn != thread_id)
