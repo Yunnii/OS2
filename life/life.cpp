@@ -7,9 +7,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
+#include <map>
 
 const int coorx[] = {-1,-1,-1,0,1,1,1,0};
 const int coory[] = {1,0,-1,-1,-1,0,1,1};
+
+pthread_mutex_t mutex;
 
 class life
  {
@@ -17,7 +21,6 @@ class life
 	public:
 		int field[10][10];
 		int num_state;
-		bool flag;
 
 		life() 
 		{
@@ -28,12 +31,14 @@ class life
 			field[3][5] = 1;
 			field[3][3] = 1;
 			field[5][5] = 1;			
-			flag = true;
+			num_state = 0;
 		}
 
-		life* next_state() const{
-			life* next_life = new life();
-			memset(next_life->field,0,sizeof(next_life->field));
+		life next_state() const
+		{
+			life next_life;
+
+			memset(next_life.field,0,sizeof(next_life.field));
 			int n ,x,y;						
 			for(int i = 0; i< 10; ++i)
 			{
@@ -47,14 +52,15 @@ class life
 						n += field[x][y];	
 					}
 					if(n == 3 || (n == 2 && field[i][j]))
-						next_life->field[i][j] = 1;
+						next_life.field[i][j] = 1;
 				}
 			}
-			next_life->num_state  = num_state + 1;
+			next_life.num_state  = num_state + 1;
 			return next_life;
 		}
 
-		void print(int fd) const {
+		void print(int fd) const 
+		{
 			char str[120];
 			sprintf(str,"State: %d\r\n",num_state);
 			write(fd,str,strlen(str));
@@ -71,22 +77,25 @@ class life
 
 		}
 
-		bool fr(){return flag;}
+	/*	bool fr(){return flag;}
 
 		void lock(){flag = false;}
 
-		void release(){flag = true;}
+		void release(){flag = true;} */
 };
 
-
+volontile int _time;
+template <class T>
 struct node 
 {
-	life* value;
-	volatile node* next;
+	int time;
+	node<T> *next;
+	T value;
 };
 
-volatile node* cur_life;
-
+node<int>* cur_life;
+int min_time;
+std::map<int, life> states;
 
 
 int client_handler(void *arg)
@@ -98,77 +107,44 @@ int client_handler(void *arg)
 	while(1)
 	{
 		read(c_sock, buf, 99);
-
-		if(buf[0] == 'q') 
+		int las_time = _time;
+		
+		states[last_time].print(c_sock);
+		for(volatile node<int> * cur = cur_life; cur != 0; cur = cur->next)
 		{
-			break;
-		}
-		volatile node* cl_life;
-
-		cl_life = cur_life;
-
-		cl_life->value->lock();
-
-		cl_life->value->print(c_sock);
-
-		cl_life->value->release();
-
-	}	
-	close(c_sock);
-
-	return 0;
+			if (cur->value == num)
+			{
+				cur->time = _time;
+				break;
+			}
+		}	
+	}
 }
 
 int process(void* arg)
 {
 
-	volatile node *next_life , *prev_life , *tmp;
-
-	while(1){	
-
+	while(1)
+	{
 		sleep(1);
-
-		prev_life = cur_life;
-
-		while (prev_life->next != NULL)
+		int p = 1<<30;
+		for(volatile node<int> * cur = cur_life; cur != 0; cur = cur->next)
 		{
-			tmp = prev_life->next;	
-			if(tmp->value->fr())
-			{       		
-				prev_life->next = tmp->next;
-	             		delete tmp->value;
-                		delete tmp;
+			p = std::min((volatile int&)p, cur->time);
+		}
+		if (p != (1<<30))
+			for(; min_time < p; min_time++)
+			{
+				states.erase(states.find(min_time));
+				printf("State %d is dead now\n", min_time);
 			}
-			else prev_life = tmp;
-            		
-        }
-
-    	next_life = new node();
-		next_life->value = cur_life->value->next_state();
-		next_life->next = cur_life;
-		cur_life = next_life;
-
-
-
-    		
-	}
-	_exit(0);
+		game_state next = states[(int)_time].next();
+		_time ++;
+		states.insert(std::make_pair((int)_time, next));
 }
 
-
-
-int main()
+void listen()
 {
-	cur_life = new node();
-	cur_life->value = new life();
-	cur_life->next = NULL;
-	void* child_stack = (void*) ((char*)malloc(65536) + 65536);
-	if (clone(process, child_stack, CLONE_VM, NULL) == -1) 
-	{
-		perror("Clone error");
-	        _exit(1);
-	}	
-
 	int sock, client_sock, clen;
 	struct sockaddr_in serv_addr, client_addr;
 	sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -190,7 +166,22 @@ int main()
 			_exit(1);
 		}
 	}
+}
 
+int main()
+{
+	cur_life = new node();
+	cur_life->value = new life();
+	cur_life->next = NULL;
+	void* child_stack = (void*) ((char*)malloc(65536) + 65536);
+	if (clone(process, child_stack, CLONE_VM, NULL) == -1) 
+	{
+		perror("Clone error");
+	        _exit(1);
+	}	
+	pthread_mutex_init(&mutex, 0);
+	
+	listen();
 
 	while(1) 
 	{
