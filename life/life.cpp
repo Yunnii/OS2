@@ -112,7 +112,7 @@ int client_handler(void *arg)
 		states[last_time].print(c_sock);
 		for(volatile node<int> * cur = cur_life; cur != 0; cur = cur->next)
 		{
-			if (cur->value == num)
+			if (cur->value == c_sock)
 			{
 				cur->time = _time;
 				break;
