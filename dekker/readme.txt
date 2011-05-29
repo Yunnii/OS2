@@ -1,13 +1,11 @@
-dekker without mfence это после пересохранения первого файла после редактирования)  нотепад както странно сохранил. и спп и аш. ток я чот только аш залила
-
-http://peeterjoot.wordpress.com/tag/memory-barrier/ отсюда ) во) второй мфенс лишний) я поняла
-Все! компилятор говорит все хорошо =) только у меня gcc и я его с ключом -c запускаю
-
-live проверьте  https://github.com/Yunnii/OS2/blob/master/life/life.cpp
-
-
 29.05
 
 Да я лайф на глазок правила... мне показалось что все ок. 
+
+Все) разобралась с ним)
+
+https://github.com/Yunnii/OS2/blob/master/dekker/dekker_without_mfence.cpp
+
+https://github.com/Yunnii/OS2/blob/master/dekker/dekker.cpp
 
 
