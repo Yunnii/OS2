@@ -3,41 +3,45 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define A 100000000
+#define mfence_c() asm volatile ("":::"memory")
 
-
-int threads[2];
-int turn;
-int sch = 0;
+volatile int threads[2];
+volatile int turn;
+volatile int sch = 0;
 
 void  critical_function(int thread_id)
 {
+    mfence_c();
 	++sch;
-	printf("Critical func hello =) %d\n",thread_id);
+	//printf("Critical func hello =) %d\n",thread_id);
 }
-void mfence_c()
-{
-//#define mbarrier() asm volatile ("":::"memory")
-	asm volatile("mfence":::"memory");
-}
+
 void* dekker(void* id)
 {
 	int thread_id=*((int*)id);
-    threads[thread_id] = 1; 
-	mfence_c();
-    while (threads[1-thread_id])
+    
+    mfence_c();
+    while (sch < A)
     {
-        if (turn != thread_id)
+        threads[thread_id] = 1;
+        while (threads[1-thread_id])
         {
-            threads[thread_id] = 0;
-            while (turn != thread_id) {}
-            threads[thread_id] = 1;
+            if (turn != thread_id)
+            {
+                threads[thread_id] = 0;
+                while (turn != thread_id) {}
+                threads[thread_id] = 1;
+            }
         }
+        
+        mfence_c();
+        if ( sch < A ) 
+            critical_function(thread_id);
+	    
+        turn = 1-thread_id;
+        threads[thread_id] = 0;
     }
-    critical_function(thread_id);
-	
-    turn = 1-thread_id;
-// mfence() может быть и здесь...
-    threads[thread_id] = 0;
 }
 
 int main()
@@ -63,6 +67,7 @@ int main()
 	pthread_join(thread1,NULL);
 	pthread_join(thread2,NULL);
 	
+	printf("%i\n", sch);
 
 	return 0;
 }
