@@ -36,6 +36,7 @@ void* dekker(void* id)
     critical_function(thread_id);
 	
     turn = 1-thread_id;
+// mfence() может быть и здесь...
     threads[thread_id] = 0;
 }
 
